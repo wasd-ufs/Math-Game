@@ -1,7 +1,4 @@
-# (colocar nome do projeto)
-
-## Grupo X:
-(colocar nome dos participantes)
+# Math-Game
 
 ## 🎮 Versão da Unity  
-Este projeto foi desenvolvido utilizando **Unity (colocar nome da versao da unity)**.
+Este projeto está sendo desenvolvido utilizando **Unity 6.1 (6000.1.3f1)**.
