@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-public class ExponentialItem : FunctionItem
+public class ExponentialItem : IFunctionItem
 {
     [SerializeField] private NumberItem _result;
     [SerializeField] private NumberItem _bases;

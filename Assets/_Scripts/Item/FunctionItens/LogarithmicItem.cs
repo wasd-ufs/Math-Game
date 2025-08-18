@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-public class LogarithmicItem : FunctionItem
+public class LogarithmicItem : IFunctionItem
 {   
     [SerializeField] private NumberItem _result;
     [SerializeField] private NumberItem _bases;
