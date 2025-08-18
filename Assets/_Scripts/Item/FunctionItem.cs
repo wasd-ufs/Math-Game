@@ -1,29 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// enum para definir o tipo da funcao
-/// </summary>
-public enum FunctionType
+public interface FunctionItem : IItem
 {
-    Exponential,
-    Logarithmic,
-    Polynomial,
-    Root
-}
-
-public class FunctionItem : BaseItem
-{
-    [SerializeField] private FunctionType _functionType;
-    [SerializeField] private int _inputCount;
-    [SerializeField] private List<int> _inputs;
+    void PutParameter(NumberItem number);
+    NumberItem TakeParameter();
+    NumberItem GetFixedParameter();
     
-    
-    public FunctionType GetFunctionType => _functionType;
-
-    public void SetFunctionType(FunctionType functionType)
-    {
-        _functionType = functionType;
-        //mudar sprite
-    }
+    NumberItem GetResult();
 }
