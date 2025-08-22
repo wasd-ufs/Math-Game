@@ -111,11 +111,9 @@ public class MovementFSM : MonoBehaviour
     {
         isFacingRight = !isFacingRight;
 
-        // Flip do player
         Vector3 rotator = new Vector3(0f, isFacingRight ? 0f : 180f, 0f);
         transform.rotation = Quaternion.Euler(rotator);
 
-        // Flip da câmera
         if (_cameraFollowObject != null)
             _cameraFollowObject.CallTurn();
     }

@@ -1,6 +1,9 @@
 using System.Collections;
 using UnityEngine;
 
+/// <summary>
+/// Controla o objeto que a camera segue, sincronizando sua posição com o jogador e gerenciando a rotação ao virar.
+/// </summary>
 public class CameraFollowObject : MonoBehaviour
 {
     [Header("References")]
@@ -12,18 +15,20 @@ public class CameraFollowObject : MonoBehaviour
     private Coroutine turnCoroutine;
     private bool _isFacingRight;
 
+    // Define a direção inicial do objeto como voltada para a direita.
     void Awake()
     {
-        _isFacingRight = true; // padrão inicial
+        _isFacingRight = true;
     }
 
+    // Atualiza a posição do objeto para seguir o jogador.
     void Update()
     {
-        // Segue a posição do player
         if (_playerTransform != null)
             transform.position = _playerTransform.position;
     }
 
+    // Inicia a coroutine para girar o objeto.
     public void CallTurn()
     {
         if (turnCoroutine != null)
@@ -32,6 +37,7 @@ public class CameraFollowObject : MonoBehaviour
         turnCoroutine = StartCoroutine(FlipPlayer());
     }
 
+    // Realiza a rotação suave do objeto no eixo Y.
     private IEnumerator FlipPlayer()
     {
         float startRotation = transform.localEulerAngles.y;
@@ -42,29 +48,18 @@ public class CameraFollowObject : MonoBehaviour
         while (elapsedTime < _flipRotationTime)
         {
             elapsedTime += Time.deltaTime;
-
-            // Lerp da rotação Y
             yRotation = Mathf.Lerp(startRotation, endRotationAmount, (elapsedTime / _flipRotationTime));
             transform.rotation = Quaternion.Euler(0f, yRotation, 0f);
-
             yield return null;
         }
 
-        // Garante o ângulo final exato
         transform.rotation = Quaternion.Euler(0f, endRotationAmount, 0f);
     }
 
+    // Determina o ângulo final de rotação com base na direção.
     private float DetermineEndRotation()
     {
         _isFacingRight = !_isFacingRight;
-
-        if (_isFacingRight)
-        {
-            return 0f;
-        }
-        else
-        {
-            return 180f;
-        }
+        return _isFacingRight ? 0f : 180f;
     }
 }

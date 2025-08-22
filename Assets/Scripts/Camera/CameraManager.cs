@@ -3,13 +3,17 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Cinemachine;
 
+/// <summary>
+/// Gerencia todas as cameras do Cinemachine na cena.
+/// Responsável por controlar a amortecimento, o movimento panorâmico (pan) e a troca entre diferentes cameras.
+/// </summary>
 public class CameraManager : MonoBehaviour
 {
     public static CameraManager Instance { get; private set; }
 
     [SerializeField] private CinemachineCamera[] _allCinemachineCameras;
 
-    [Header("Controls for lerping the Y damping during player jump/fall")]
+    [Header("Lerping the Y damping")]
     [SerializeField] private float _fallPanAmount = 0.35f;
     [SerializeField] private float _normalPanAmount = 1f;
     [SerializeField] private float _fallPanTime = 0.35f;
@@ -19,12 +23,18 @@ public class CameraManager : MonoBehaviour
     public bool LerpedFromPlayerFalling { get; set; }
 
     private Coroutine _lerpPanCoroutine;
+    private Coroutine _panCameraCoroutine;
+
     private CinemachineCamera _currentCamera;
     private CinemachinePositionComposer _positionComposer;
 
+    private Vector3 _startingTrackedObjectOffset;
+
+    public CinemachinePositionComposer CurrentPositionComposer => _positionComposer;
+
+    // Configura o singleton e inicializa a camera ativa.
     private void Awake()
     {
-        // Configuração do Singleton
         if (Instance == null)
         {
             Instance = this;
@@ -35,10 +45,19 @@ public class CameraManager : MonoBehaviour
             Destroy(gameObject);
         }
 
-        // Encontrar a câmera ativa baseada em prioridade
         UpdateCurrentCamera();
+
+        if (_positionComposer != null)
+        {
+            _startingTrackedObjectOffset = _positionComposer.TargetOffset;
+        }
+        else
+        {
+            _startingTrackedObjectOffset = Vector3.zero;
+        }
     }
 
+    // Seleciona a camera com maior prioridade.
     private void UpdateCurrentCamera()
     {
         _currentCamera = null;
@@ -52,61 +71,31 @@ public class CameraManager : MonoBehaviour
                 _currentCamera = camera;
             }
         }
-
-        // Atualizar o Position Composer se uma câmera válida for encontrada
-        if (_currentCamera != null)
-        {
-            _positionComposer = _currentCamera.GetComponentInChildren<CinemachinePositionComposer>();
-            if (_positionComposer == null)
-            {
-                Debug.LogWarning("Nenhum CinemachinePositionComposer encontrado na câmera atual. Certifique-se de adicionar o componente 'Body > Position Composer' na CinemachineCamera.");
-            }
-        }
-        else
-        {
-            Debug.LogWarning("Nenhuma câmera ativa encontrada no array _allCinemachineCameras.");
-        }
     }
 
-    #region Lerp the Y Damping
-
+    #region Lerp Damping
+    // Inicia interpolação do damping no eixo Y.
     public void LerpYDamping(bool isPlayerFalling)
     {
-        // Parar qualquer coroutine de lerp existente para evitar sobreposições
-        if (_lerpPanCoroutine != null)
-        {
-            StopCoroutine(_lerpPanCoroutine);
-        }
+        if (_lerpPanCoroutine != null) StopCoroutine(_lerpPanCoroutine);
         _lerpPanCoroutine = StartCoroutine(LerpAction(isPlayerFalling));
     }
 
+    // Interpola suavemente o damping no eixo Y.
     private IEnumerator LerpAction(bool isPlayerFalling)
     {
-        if (_positionComposer == null)
-        {
-            Debug.LogWarning("Não é possível interpolar o Y damping: Position Composer não encontrado.");
-            yield break;
-        }
+        if (_positionComposer == null) yield break;
 
         var dampingInterface = _positionComposer as CinemachineFreeLookModifier.IModifiablePositionDamping;
-        if (dampingInterface == null)
-        {
-            Debug.LogWarning("Interface IModifiablePositionDamping não suportada no Position Composer.");
-            yield break;
-        }
+        if (dampingInterface == null) yield break;
 
         IsLerpingYDamping = true;
 
-        // Capturar o valor inicial de Y damping
         float startDampAmount = dampingInterface.PositionDamping.y;
         float endDampAmount = isPlayerFalling ? _fallPanAmount : _normalPanAmount;
 
-        if (isPlayerFalling)
-        {
-            LerpedFromPlayerFalling = true;
-        }
+        if (isPlayerFalling) LerpedFromPlayerFalling = true;
 
-        // Interpolar o valor de Y damping
         float elapsedTime = 0f;
         while (elapsedTime < _fallPanTime)
         {
@@ -117,18 +106,90 @@ public class CameraManager : MonoBehaviour
                 lerpedPanAmount,
                 dampingInterface.PositionDamping.z
             );
-
             yield return null;
         }
 
         IsLerpingYDamping = false;
     }
-
     #endregion
 
-    // Opcional: Chame isso para atualizar a câmera ativa se as prioridades mudarem
-    public void RefreshActiveCamera()
+    public enum PanDirection { Up, Down, Left, Right }
+
+    #region Pan Camera
+    // Inicia o movimento de panning da camera.
+    public void PanCameraOnContact(float panDistance, float panTime, PanDirection panDirection, bool panToStartingPos)
     {
-        UpdateCurrentCamera();
+        if (_panCameraCoroutine != null) StopCoroutine(_panCameraCoroutine);
+        _panCameraCoroutine = StartCoroutine(PanCamera(panDistance, panTime, panDirection, panToStartingPos));
     }
+
+    // Realiza o panning suave da camera.
+    private IEnumerator PanCamera(float panDistance, float panTime, PanDirection panDirection, bool panToStartingPos)
+    {
+        if (_positionComposer == null) yield break;
+
+        Vector3 endPos = Vector3.zero;
+        Vector3 startingPos = Vector3.zero;
+
+        if (!panToStartingPos)
+        {
+            switch (panDirection)
+            {
+                case PanDirection.Up: endPos = Vector3.up; break;
+                case PanDirection.Down: endPos = Vector3.down; break;
+                case PanDirection.Left: endPos = Vector3.left; break;
+                case PanDirection.Right: endPos = Vector3.right; break;
+            }
+
+            endPos *= panDistance;
+            startingPos = _positionComposer.TargetOffset;
+            endPos += startingPos;
+        }
+        else
+        {
+            startingPos = _positionComposer.TargetOffset;
+            endPos = _startingTrackedObjectOffset;
+        }
+
+        float elapsedTime = 0f;
+        while (elapsedTime < panTime)
+        {
+            elapsedTime += Time.deltaTime;
+            Vector3 panLerp = Vector3.Lerp(startingPos, endPos, elapsedTime / panTime);
+            _positionComposer.TargetOffset = panLerp;
+            yield return null;
+        }
+
+        _positionComposer.TargetOffset = endPos;
+    }
+    #endregion
+
+    #region Swap Camera
+    // Troca entre cameras com base na direção de saída do jogador.
+    public void SwapCamera(CinemachineCamera camLeft, CinemachineCamera camRight, Vector2 exitDirection)
+    {
+        if (_currentCamera == camLeft && exitDirection.x > 0f)
+        {
+            camLeft.enabled = false;
+            camRight.enabled = true;
+            _currentCamera = camRight;
+        }
+        else if (_currentCamera == camRight && exitDirection.x < 0f)
+        {
+            camRight.enabled = false;
+            camLeft.enabled = true;
+            _currentCamera = camLeft;
+        }
+        else
+        {
+            return;
+        }
+
+        _positionComposer = _currentCamera.GetComponentInChildren<CinemachinePositionComposer>();
+        if (_positionComposer != null)
+        {
+            _startingTrackedObjectOffset = _positionComposer.TargetOffset;
+        }
+    }
+    #endregion
 }
