@@ -83,6 +83,9 @@ public class CameraControlTrigger : MonoBehaviour
 }
 
 [System.Serializable]
+/// <summary>
+/// Declaração de uma classe para armazenar variáveis que serão exibidas no Inspector.
+/// <summary>
 public class CustomInspectorObjects
 {
     public bool swapCameras = false;
@@ -106,6 +109,10 @@ public enum PanDirection { Up, Down, Left, Right }
 public enum AutoScrollAction { Start, Stop }
 
 [CustomEditor(typeof(CameraControlTrigger))]
+
+/// <summary>
+/// Editor personalizado para CameraControlTrigger.
+/// <summary>
 public class MyScriptEditor : Editor
 {
     CameraControlTrigger cameraControlTrigger;
@@ -146,8 +153,8 @@ public class MyScriptEditor : Editor
             cameraControlTrigger.customInspectorObjects.scrollActionType =
                 (AutoScrollAction)EditorGUILayout.EnumPopup("Scroll Action", cameraControlTrigger.customInspectorObjects.scrollActionType);
         }
-        
-            if (cameraControlTrigger.customInspectorObjects.scrollActionType == AutoScrollAction.Start)
+
+        if (cameraControlTrigger.customInspectorObjects.scrollActionType == AutoScrollAction.Start)
         {
             cameraControlTrigger.customInspectorObjects.scrollDirection =
                 EditorGUILayout.Vector2Field("Scroll Direction", cameraControlTrigger.customInspectorObjects.scrollDirection);
