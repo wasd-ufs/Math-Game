@@ -27,13 +27,13 @@ public class AirborneState : MovementState
         
         //Movimento Horizontal
         _context.velocity.x = Mathf.MoveTowards(_context.velocity.x,
-            _context.MovementInputVector.x * _context.maxMoveSpeed, _context.horizontalAcceleration * Time.fixedDeltaTime);
+            _context.MovementInputVector.x * _context.MaxMoveSpeed, _context.HorizontalAcceleration * Time.fixedDeltaTime);
         
         //Movimento Vertical/Gravidade
         bool isFalling = _context.velocity.y < 0 || !_context.isJumpKeyBeingPressed;
-        float gravityMultiplier = isFalling ? _context.jumpGravityMultiplier : 1f;
-        _context.velocity.y += _context.gravity * gravityMultiplier * Time.deltaTime;
-        _context.velocity.y = Mathf.Max(_context.velocity.y, _context.terminalVelocity);
+        float gravityMultiplier = isFalling ? _context.JumpGravityMultiplier : 1f;
+        _context.velocity.y += _context.Gravity * gravityMultiplier * Time.deltaTime;
+        _context.velocity.y = Mathf.Max(_context.velocity.y, _context.TerminalVelocity);
         
         //Corrigir posição
         Vector2 position = _context.rigidbody.position;
