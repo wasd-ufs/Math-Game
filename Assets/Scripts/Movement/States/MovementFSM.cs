@@ -10,6 +10,7 @@ using UnityEngine.Serialization;
 public class MovementFSM : MonoBehaviour
 {
     [SerializeField]private MovementState _movementState;
+    [SerializeField] private CameraFollowObject _cameraFollowObject;
     
     [HideInInspector]public Rigidbody2D rigidbody;
     [HideInInspector]public InputSystem_Actions _inputSystem;
@@ -31,6 +32,8 @@ public class MovementFSM : MonoBehaviour
     public float TerminalVelocity { get; private set; } = -40f;
     public float JumpForce { get; private set; } = 20f;
     public float Gravity { get; private set; } = -80f;
+    public bool isFacingRight { get; private set; } = true;
+    private float _fallSpeedYDampingChangeThreshold;
 
     public void TransitionTo(MovementState newState)
     {
@@ -51,6 +54,11 @@ public class MovementFSM : MonoBehaviour
         groundedState = GetComponent<GroundedState>();
         
         TransitionTo(airborneState);
+
+        if (CameraManager.Instance != null)
+        {
+            _fallSpeedYDampingChangeThreshold = CameraManager.Instance._fallSpeedDampingChangeThreshold;
+        }
     }
     
     private void Update()
@@ -59,7 +67,23 @@ public class MovementFSM : MonoBehaviour
         isJumpKeyBeingPressed = _inputSystem.Player.Jump.ReadValue<float>() > 0;
         isSprinting = _inputSystem.Player.Sprint.ReadValue<float>() > 0;
         
+        if (MovementInputVector.x > 0 && !isFacingRight)
+            Turn();
+        else if (MovementInputVector.x < 0 && isFacingRight)
+            Turn();
+        
         _movementState.RunInUpdate();
+
+        if (velocity.y < _fallSpeedYDampingChangeThreshold && !CameraManager.Instance.IsLerpingYDamping && !CameraManager.Instance.LerpedFromPlayerFalling)
+        {
+            CameraManager.Instance.LerpYDamping(true);
+        }
+
+        if (velocity.y >= 0 && !CameraManager.Instance.IsLerpingYDamping && CameraManager.Instance.LerpedFromPlayerFalling)
+        {
+            CameraManager.Instance.LerpedFromPlayerFalling = false;
+            CameraManager.Instance.LerpYDamping(false);
+        }
     }
 
     private void FixedUpdate()
@@ -80,5 +104,16 @@ public class MovementFSM : MonoBehaviour
     private void SprintPerformed(InputAction.CallbackContext context)
     {
         _movementState.SprintPerformed(context);
+    }
+    
+    private void Turn()
+    {
+        isFacingRight = !isFacingRight;
+
+        Vector3 rotator = new Vector3(0f, isFacingRight ? 0f : 180f, 0f);
+        transform.rotation = Quaternion.Euler(rotator);
+
+        if (_cameraFollowObject != null)
+            _cameraFollowObject.CallTurn();
     }
 }
