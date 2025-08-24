@@ -5,7 +5,7 @@ using Unity.Cinemachine;
 
 /// <summary>
 /// Gerencia todas as cameras do Cinemachine na cena.
-/// Responsável por controlar a amortecimento, o movimento panorâmico (pan) e a troca entre diferentes cameras.
+/// Responsável por controlar a amortecimento, o movimento panorâmico (pan), a troca entre diferentes cameras e o autoScroll.
 /// </summary>
 public class CameraManager : MonoBehaviour
 {
@@ -13,11 +13,15 @@ public class CameraManager : MonoBehaviour
 
     [SerializeField] private CinemachineCamera[] _allCinemachineCameras;
 
-    [Header("Lerping the Y damping")]
+    [Header("Y damping")]
     [SerializeField] private float _fallPanAmount = 0.35f;
     [SerializeField] private float _normalPanAmount = 1f;
     [SerializeField] private float _fallPanTime = 0.35f;
     [SerializeField] public float _fallSpeedDampingChangeThreshold = -15f;
+
+    [Header("AutoScroll Settings")]
+    [SerializeField] private CinemachineCamera _autoScrollCamera;
+    [SerializeField] private CameraAutoScrollTarget _cameraAutoScrollTarget;
 
     public bool IsLerpingYDamping { get; private set; }
     public bool LerpedFromPlayerFalling { get; set; }
@@ -47,6 +51,11 @@ public class CameraManager : MonoBehaviour
 
         UpdateCurrentCamera();
 
+        if (_currentCamera != null)
+        {
+            _positionComposer = _currentCamera.GetComponentInChildren<CinemachinePositionComposer>();
+        }
+
         if (_positionComposer != null)
         {
             _startingTrackedObjectOffset = _positionComposer.TargetOffset;
@@ -73,7 +82,7 @@ public class CameraManager : MonoBehaviour
         }
     }
 
-    #region Lerp Damping
+    #region Y Damping
     // Inicia interpolação do damping no eixo Y.
     public void LerpYDamping(bool isPlayerFalling)
     {
@@ -190,6 +199,26 @@ public class CameraManager : MonoBehaviour
         {
             _startingTrackedObjectOffset = _positionComposer.TargetOffset;
         }
+    }
+    #endregion
+
+    #region Auto Scroll Control
+    
+    // Inicia o modo de auto-scroll com parâmetros específicos.
+    public void StartAutoScroll(Vector3 startPosition, Vector2 direction, float speed)
+    {
+        _cameraAutoScrollTarget.SetPosition(startPosition);
+
+        _cameraAutoScrollTarget.StartScrolling(direction, speed);
+    }
+
+    /// Para o modo de auto-scroll e retorna para a câmera do jogador.
+    public void StopAutoScroll()
+    {
+        if (_autoScrollCamera == null || _cameraAutoScrollTarget == null) return;
+        
+        // Usamos o novo método para parar
+        _cameraAutoScrollTarget.StopScrolling();
     }
     #endregion
 }

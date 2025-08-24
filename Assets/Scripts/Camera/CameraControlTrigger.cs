@@ -1,12 +1,11 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using Unity.Cinemachine;
 using UnityEditor;
 
 /// <summary>
-/// Controla triggers para gerenciar ações da camera, como panning e troca de cameras, quando o jogador entra ou sai da área.
-/// </summary>
+/// Controla triggers gerais para gerenciar ações da camera
+/// Pode realizar troca de cameras, camera panoramica e AutoScroll. Ao player entrar ou sair do trigger. 
+/// <summary>
 public class CameraControlTrigger : MonoBehaviour
 {
     public CustomInspectorObjects customInspectorObjects;
@@ -18,10 +17,13 @@ public class CameraControlTrigger : MonoBehaviour
         _coll = GetComponent<Collider2D>();
     }
 
-    // Aciona o panning da camera quando o jogador entra no gatilho.
+    // Aciona ações da câmera quando o jogador entra no gatilho.
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (collision.CompareTag("Player") && customInspectorObjects.panCameraOnContact)
+        if (!collision.CompareTag("Player")) return;
+
+        // Ação de Panning
+        if (customInspectorObjects.panCameraOnContact)
         {
             CameraManager.Instance.PanCameraOnContact(
                 customInspectorObjects.panDistance,
@@ -29,6 +31,23 @@ public class CameraControlTrigger : MonoBehaviour
                 (CameraManager.PanDirection)customInspectorObjects.panDirection,
                 false
             );
+        }
+
+        // Ação de Auto-Scroll
+        if (customInspectorObjects.autoScrollAction)
+        {
+            if (customInspectorObjects.scrollActionType == AutoScrollAction.Start)
+            {
+                CameraManager.Instance.StartAutoScroll(
+                    collision.transform.position,
+                    customInspectorObjects.scrollDirection,
+                    customInspectorObjects.scrollSpeed
+                );
+            }
+            else if (customInspectorObjects.scrollActionType == AutoScrollAction.Stop)
+            {
+                CameraManager.Instance.StopAutoScroll();
+            }
         }
     }
 
@@ -68,6 +87,11 @@ public class CustomInspectorObjects
 {
     public bool swapCameras = false;
     public bool panCameraOnContact = false;
+    public bool autoScrollAction = false;
+
+    [HideInInspector] public AutoScrollAction scrollActionType;
+    [HideInInspector] public Vector2 scrollDirection = Vector2.right;
+    [HideInInspector] public float scrollSpeed = 3f;
 
     [HideInInspector] public CinemachineCamera cameraOnLeft;
     [HideInInspector] public CinemachineCamera cameraOnRight;
@@ -78,6 +102,8 @@ public class CustomInspectorObjects
 }
 
 public enum PanDirection { Up, Down, Left, Right }
+
+public enum AutoScrollAction { Start, Stop }
 
 [CustomEditor(typeof(CameraControlTrigger))]
 public class MyScriptEditor : Editor
@@ -113,6 +139,21 @@ public class MyScriptEditor : Editor
                 EditorGUILayout.FloatField("Pan Distance", cameraControlTrigger.customInspectorObjects.panDistance);
             cameraControlTrigger.customInspectorObjects.panTime =
                 EditorGUILayout.FloatField("Pan Time", cameraControlTrigger.customInspectorObjects.panTime);
+        }
+
+        if (cameraControlTrigger.customInspectorObjects.autoScrollAction)
+        {
+            cameraControlTrigger.customInspectorObjects.scrollActionType =
+                (AutoScrollAction)EditorGUILayout.EnumPopup("Scroll Action", cameraControlTrigger.customInspectorObjects.scrollActionType);
+        }
+        
+            if (cameraControlTrigger.customInspectorObjects.scrollActionType == AutoScrollAction.Start)
+        {
+            cameraControlTrigger.customInspectorObjects.scrollDirection =
+                EditorGUILayout.Vector2Field("Scroll Direction", cameraControlTrigger.customInspectorObjects.scrollDirection);
+
+            cameraControlTrigger.customInspectorObjects.scrollSpeed =
+                EditorGUILayout.FloatField("Scroll Speed", cameraControlTrigger.customInspectorObjects.scrollSpeed);
         }
 
         if (GUI.changed) EditorUtility.SetDirty(cameraControlTrigger);
