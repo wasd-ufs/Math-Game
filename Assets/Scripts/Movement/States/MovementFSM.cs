@@ -25,15 +25,14 @@ public class MovementFSM : MonoBehaviour
 
     public Vector2 velocity;
 
-    public float sprintSpeedModifier = 1.5f;
-    public float jumpGravityMultiplier = 2f;
-    public float maxMoveSpeed = 7f;
-    public float horizontalAcceleration = 32f;
-    public float terminalVelocity = -40f;
-    public float jumpForce = 20f;
-    public float gravity = -80f;
-    public bool isFacingRight = true;
-
+    public float SprintSpeedModifier { get; private set; } = 1.5f;
+    public float JumpGravityMultiplier { get; private set; } = 2f;
+    public float MaxMoveSpeed { get; private set; } = 7f;
+    public float HorizontalAcceleration { get; private set; } = 32f;
+    public float TerminalVelocity { get; private set; } = -40f;
+    public float JumpForce { get; private set; } = 20f;
+    public float Gravity { get; private set; } = -80f;
+    public bool isFacingRight { get; private set; } = true;
     private float _fallSpeedYDampingChangeThreshold;
 
     public void TransitionTo(MovementState newState)
